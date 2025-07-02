@@ -18,6 +18,19 @@
     </div>
 
     <div id="counters" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+
+    <!-- GRAND TOTAL SECTION -->
+    <div id="grand-totals" class="bg-gray-800 p-6 rounded-xl text-lg mt-8 space-y-2">
+      <h2 class="text-xl font-bold text-center text-yellow-300">Grand Totals</h2>
+      <div class="flex justify-between text-green-400">
+        <span>Total Count (7 days): </span>
+        <span id="grand-count">0</span>
+      </div>
+      <div class="flex justify-between text-pink-300">
+        <span>Total Amount (₹): </span>
+        <span id="grand-amount">₹0.00</span>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -37,6 +50,7 @@
       container.innerHTML = '';
       const ids = loadFromStorage('counter-ids') || [];
       ids.forEach(id => container.appendChild(createCounterElement(id)));
+      updateGrandTotals(ids);
     };
 
     const addCounter = () => {
@@ -54,6 +68,22 @@
       localStorage.removeItem(`counter-${id}`);
       localStorage.removeItem(`history-${id}`);
       renderCounters();
+    };
+
+    const updateGrandTotals = (ids) => {
+      let totalCount = 0;
+      let totalAmount = 0;
+      const past7 = getPast7Days();
+      ids.forEach(id => {
+        const history = loadFromStorage(`history-${id}`) || [];
+        const data = loadFromStorage(`counter-${id}`) || { unitPrice: 0 };
+        const weekly = history.filter(h => past7.includes(h.date));
+        const weeklyTotal = weekly.reduce((sum, h) => sum + h.value, 0);
+        totalCount += weeklyTotal;
+        totalAmount += weeklyTotal * (data.unitPrice || 0);
+      });
+      document.getElementById('grand-count').textContent = totalCount;
+      document.getElementById('grand-amount').textContent = `₹${totalAmount.toFixed(2)}`;
     };
 
     const createCounterElement = (id) => {
@@ -112,6 +142,7 @@
         valueDisplay.textContent = '0';
         saveToStorage(`counter-${id}`, data);
         renderHistory();
+        updateGrandTotals(loadFromStorage('counter-ids') || []);
       };
 
       const past7 = getPast7Days();
@@ -134,7 +165,7 @@
         `;
 
         historyList.innerHTML = '<h4 class="text-white font-semibold mb-2 mt-4">Past 7 Days</h4>';
-        [...past7].reverse().forEach(date => {
+        past7.forEach(date => {
           const entry = history.find(h => h.date === date);
           const val = entry ? entry.value : 0;
           const cost = val * data.unitPrice;
@@ -185,7 +216,7 @@
       saveExportRow.children[1].onclick = () => {
         let csv = 'Date,Value,Expense\n' + history.map(h =>
           `${h.date},${h.value},${(h.value * data.unitPrice).toFixed(2)}`
-        ).join('\\n');
+        ).join('\n');
         const blob = new Blob([csv], { type: 'text/csv' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
