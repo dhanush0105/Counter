@@ -4,43 +4,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Daily Counter Tracker</title>
+  <link rel="icon" type="image/avif" href="favicon.avif" />
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen py-10 px-5 transition-colors duration-300" id="body">
 
   <div class="max-w-6xl mx-auto space-y-10">
     <div class="flex justify-between items-center">
-      <h1 class="text-3xl font-extrabold text-blue-400">COUNTER</h1>
+      <h1 class="text-3xl font-extrabold text-blue-400">COUNTER </h1>
       <div class="flex gap-4">
         <button onclick="toggleTheme()" id="themeBtn" class="bg-gray-600 px-4 py-2 rounded-lg font-bold text-white">☀️ Light Mode</button>
         <button onclick="addCounter()" class="bg-green-600 px-6 py-2 rounded-lg font-bold text-white">+ Add Counter</button>
       </div>
     </div>
-
     <div id="counters" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-
-    <!-- GRAND TOTAL SECTION -->
-    <div id="grand-totals" class="bg-gray-800 p-6 rounded-xl text-lg mt-8 space-y-2">
-      <h2 class="text-xl font-bold text-center text-yellow-300">Grand Totals</h2>
-      <div class="flex justify-between text-green-400">
-        <span>Total Count (7 days): </span>
-        <span id="grand-count">0</span>
-      </div>
-      <div class="flex justify-between text-pink-300">
-        <span>Total Amount (₹): </span>
-        <span id="grand-amount">₹0.00</span>
-      </div>
-    </div>
   </div>
 
   <script>
     const getToday = () => new Date().toISOString().split('T')[0];
-    const getPast7Days = () =>
-      Array.from({ length: 7 }, (_, i) => {
+    const getPast7Days = () => {
+      return Array.from({ length: 7 }, (_, i) => {
         const d = new Date();
         d.setDate(d.getDate() - i);
         return d.toISOString().split('T')[0];
       });
+    };
 
     const saveToStorage = (key, value) => localStorage.setItem(key, JSON.stringify(value));
     const loadFromStorage = (key) => JSON.parse(localStorage.getItem(key));
@@ -50,7 +38,6 @@
       container.innerHTML = '';
       const ids = loadFromStorage('counter-ids') || [];
       ids.forEach(id => container.appendChild(createCounterElement(id)));
-      updateGrandTotals(ids);
     };
 
     const addCounter = () => {
@@ -68,22 +55,6 @@
       localStorage.removeItem(`counter-${id}`);
       localStorage.removeItem(`history-${id}`);
       renderCounters();
-    };
-
-    const updateGrandTotals = (ids) => {
-      let totalCount = 0;
-      let totalAmount = 0;
-      const past7 = getPast7Days();
-      ids.forEach(id => {
-        const history = loadFromStorage(`history-${id}`) || [];
-        const data = loadFromStorage(`counter-${id}`) || { unitPrice: 0 };
-        const weekly = history.filter(h => past7.includes(h.date));
-        const weeklyTotal = weekly.reduce((sum, h) => sum + h.value, 0);
-        totalCount += weeklyTotal;
-        totalAmount += weeklyTotal * (data.unitPrice || 0);
-      });
-      document.getElementById('grand-count').textContent = totalCount;
-      document.getElementById('grand-amount').textContent = `₹${totalAmount.toFixed(2)}`;
     };
 
     const createCounterElement = (id) => {
@@ -142,7 +113,6 @@
         valueDisplay.textContent = '0';
         saveToStorage(`counter-${id}`, data);
         renderHistory();
-        updateGrandTotals(loadFromStorage('counter-ids') || []);
       };
 
       const past7 = getPast7Days();
