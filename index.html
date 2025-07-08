@@ -4,7 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Daily Counter Tracker</title>
+  <link rel="icon" type="image/avif" href="favicon.avif" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Z76Z3QPRHG"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Z76Z3QPRHG');
+</script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen py-10 px-5 transition-colors duration-300" id="body">
 
@@ -16,18 +26,16 @@
         <button onclick="addCounter()" class="bg-green-600 px-6 py-2 rounded-lg font-bold text-white">+ Add Counter</button>
       </div>
     </div>
-
     <div id="counters" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
   </div>
 
   <script>
     const getToday = () => new Date().toISOString().split('T')[0];
-    const getPast7Days = () =>
-      Array.from({ length: 7 }, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        return d.toISOString().split('T')[0];
-      });
+    const getPast7Days = () => Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      return d.toISOString().split('T')[0];
+    });
 
     const saveToStorage = (key, value) => localStorage.setItem(key, JSON.stringify(value));
     const loadFromStorage = (key) => JSON.parse(localStorage.getItem(key));
@@ -49,8 +57,7 @@
 
     const deleteCounter = (id) => {
       const ids = loadFromStorage('counter-ids') || [];
-      const updated = ids.filter(cid => cid !== id);
-      saveToStorage('counter-ids', updated);
+      saveToStorage('counter-ids', ids.filter(cid => cid !== id));
       localStorage.removeItem(`counter-${id}`);
       localStorage.removeItem(`history-${id}`);
       renderCounters();
@@ -81,11 +88,13 @@
           priceInput.value = 15;
         }
         saveToStorage(`counter-${id}`, data);
+        updateTodayAmount();
       });
 
       priceInput.addEventListener('input', () => {
         data.unitPrice = parseFloat(priceInput.value) || 0;
         saveToStorage(`counter-${id}`, data);
+        updateTodayAmount();
         renderHistory();
       });
 
@@ -93,10 +102,18 @@
       valueDisplay.className = 'text-4xl font-bold text-indigo-300 text-center';
       valueDisplay.textContent = data.value;
 
+      const amountDisplay = document.createElement('div');
+      amountDisplay.className = 'text-center text-sm text-pink-300';
+      const updateTodayAmount = () => {
+        const amount = data.value * (data.unitPrice || 0);
+        amountDisplay.textContent = `₹${amount.toFixed(2)}`;
+      };
+
       const modifyValue = (delta) => {
         data.value += delta;
         valueDisplay.textContent = data.value;
         saveToStorage(`counter-${id}`, data);
+        updateTodayAmount();
       };
 
       const saveCount = () => {
@@ -105,12 +122,13 @@
         if (existing) {
           existing.value += data.value;
         } else {
-          history.push({ date: today, value: data.value });
+          history.push({ date: today, value: data.value, unitPrice: data.unitPrice });
         }
         saveToStorage(`history-${id}`, history);
         data.value = 0;
         valueDisplay.textContent = '0';
         saveToStorage(`counter-${id}`, data);
+        updateTodayAmount();
         renderHistory();
       };
 
@@ -118,9 +136,9 @@
       const renderHistory = () => {
         const weekly = history.filter(h => past7.includes(h.date));
         const weeklyTotal = weekly.reduce((sum, h) => sum + h.value, 0);
+        const weeklyExpense = weekly.reduce((sum, h) => sum + (h.value * (h.unitPrice || data.unitPrice)), 0);
         const overallTotal = history.reduce((sum, h) => sum + h.value, 0);
-        const weeklyExpense = weeklyTotal * data.unitPrice;
-        const overallExpense = overallTotal * data.unitPrice;
+        const overallExpense = history.reduce((sum, h) => sum + (h.value * (h.unitPrice || data.unitPrice)), 0);
 
         totals.innerHTML = `
           <div class="flex justify-between text-sm">
@@ -134,10 +152,10 @@
         `;
 
         historyList.innerHTML = '<h4 class="text-white font-semibold mb-2 mt-4">Past 7 Days</h4>';
-        [...past7].reverse().forEach(date => {
+        past7.forEach(date => {
           const entry = history.find(h => h.date === date);
           const val = entry ? entry.value : 0;
-          const cost = val * data.unitPrice;
+          const cost = entry ? (entry.value * (entry.unitPrice || data.unitPrice)) : 0;
           const item = document.createElement('div');
           item.className = 'bg-gray-600 p-2 rounded-md flex justify-between';
           item.innerHTML = `
@@ -168,6 +186,7 @@
       const counterCenter = document.createElement('div');
       counterCenter.className = 'text-center';
       counterCenter.appendChild(valueDisplay);
+      counterCenter.appendChild(amountDisplay);
       const label = document.createElement('div');
       label.className = 'text-sm text-gray-300';
       label.textContent = "Today's Count";
@@ -183,9 +202,9 @@
       `;
       saveExportRow.children[0].onclick = saveCount;
       saveExportRow.children[1].onclick = () => {
-        let csv = 'Date,Value,Expense\n' + history.map(h =>
-          `${h.date},${h.value},${(h.value * data.unitPrice).toFixed(2)}`
-        ).join('\\n');
+        let csv = 'Date,Value,Unit Price,Expense\n' + history.map(h =>
+          `${h.date},${h.value},${h.unitPrice || data.unitPrice},${(h.value * (h.unitPrice || data.unitPrice)).toFixed(2)}`
+        ).join('\n');
         const blob = new Blob([csv], { type: 'text/csv' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -201,6 +220,7 @@
       const totals = document.createElement('div');
       const historyList = document.createElement('div');
 
+      updateTodayAmount();
       renderHistory();
 
       wrapper.appendChild(input);
