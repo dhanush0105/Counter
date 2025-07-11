@@ -7,14 +7,13 @@
   <link rel="icon" type="image/avif" href="favicon.avif" />
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-Z76Z3QPRHG"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-Z76Z3QPRHG');
-</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-Z76Z3QPRHG"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-Z76Z3QPRHG');
+  </script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen py-10 px-5 transition-colors duration-300" id="body">
 
@@ -202,9 +201,15 @@
       `;
       saveExportRow.children[0].onclick = saveCount;
       saveExportRow.children[1].onclick = () => {
-        let csv = 'Date,Value,Unit Price,Expense\n' + history.map(h =>
-          `${h.date},${h.value},${h.unitPrice || data.unitPrice},${(h.value * (h.unitPrice || data.unitPrice)).toFixed(2)}`
-        ).join('\n');
+        let totalValue = 0;
+        let totalExpense = 0;
+        let csv = 'Date,Value,Unit Price,Expense\n' + history.map(h => {
+          const expense = h.value * (h.unitPrice || data.unitPrice);
+          totalValue += h.value;
+          totalExpense += expense;
+          return `${h.date},${h.value},${h.unitPrice || data.unitPrice},${expense.toFixed(2)}`;
+        }).join('\n');
+        csv += `\nTotal,${totalValue},,${totalExpense.toFixed(2)}`;
         const blob = new Blob([csv], { type: 'text/csv' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
