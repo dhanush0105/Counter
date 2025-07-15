@@ -13,7 +13,6 @@
     <div class="flex justify-between items-center">
       <h1 class="text-3xl font-extrabold text-blue-400">COUNTER</h1>
       <div class="flex gap-4">
-        <button onclick="toggleTheme()" id="themeBtn" class="bg-gray-600 px-4 py-2 rounded-lg font-bold text-white">☀️ Light Mode</button>
         <button onclick="addCounter()" class="bg-green-600 px-6 py-2 rounded-lg font-bold text-white">+ Add Counter</button>
       </div>
     </div>
@@ -256,21 +255,6 @@
       wrapper.appendChild(historyList);
 
       return wrapper;
-    };
-
-    const toggleTheme = () => {
-      const body = document.getElementById('body');
-      const btn = document.getElementById('themeBtn');
-      const isDark = body.classList.contains('bg-gray-900');
-      if (isDark) {
-        body.classList.remove('bg-gray-900', 'text-white');
-        body.classList.add('bg-white', 'text-black');
-        btn.textContent = '🌙 Dark Mode';
-      } else {
-        body.classList.remove('bg-white', 'text-black');
-        body.classList.add('bg-gray-900', 'text-white');
-        btn.textContent = '☀️ Light Mode';
-      }
     };
 
     renderCounters();
